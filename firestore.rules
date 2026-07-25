@@ -22,9 +22,16 @@ service cloud.firestore {
     match /combos/{document=**} {
       allow read: if true;
     }
+    match /settings/{document=**} {
+      allow read: if true;
+    }
 
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
+      
+      match /{document=**} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
       
       // CHỐNG HACKER: Ngăn chặn tự ý nâng quyền, bơm tiền hoặc thêm khóa học
       allow create: if request.auth != null && request.auth.uid == userId 
