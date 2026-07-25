@@ -1,12 +1,62 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function Pricing() {
   const [activeCategory, setActiveCategory] = useState<'subscription' | 'retail'>('subscription');
   const [retailBilling, setRetailBilling] = useState<'monthly' | 'lifetime'>('monthly');
   const [isYearly, setIsYearly] = useState(false);
+
+  const [tiers, setTiers] = useState<any[]>([]);
+  const [combos, setCombos] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [tiersSnap, combosSnap, productsSnap] = await Promise.all([
+          getDocs(collection(db, 'tiers')),
+          getDocs(collection(db, 'combos')),
+          getDocs(collection(db, 'products'))
+        ]);
+        
+        const fetchedTiers = tiersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+        const fetchedCombos = combosSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+        const fetchedProducts = productsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+
+        // Sort Tiers by price
+        fetchedTiers.sort((a, b) => (a.priceMonthly || 0) - (b.priceMonthly || 0));
+
+        setTiers(fetchedTiers);
+        setCombos(fetchedCombos);
+        setProducts(fetchedProducts);
+      } catch (error) {
+        console.error("Error fetching pricing:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const formatMoney = (amount: number) => {
+    if (amount === 0) return '0đ';
+    if (amount >= 1000000) return (amount / 1000000).toFixed(2).replace(/\.00$/, '') + 'M';
+    if (amount >= 1000) return (amount / 1000).toString() + 'K';
+    return amount.toString() + 'đ';
+  };
+
+  if (loading) {
+    return (
+      <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8 text-center text-zinc-400">
+        Đang tải bảng giá...
+      </section>
+    );
+  }
 
   return (
     <section 
@@ -68,84 +118,69 @@ export default function Pricing() {
 
       {activeCategory === 'subscription' ? (
         <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Free Plan */}
-          <div data-testid="pricing-card-free" className="flex flex-col justify-between rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 shadow-sm hover:border-zinc-700 transition-colors">
-            <div>
-              <h3 className="text-xl font-bold text-zinc-300">Dùng Thử</h3>
-              <p className="mt-4 text-zinc-400 text-sm h-10">Trải nghiệm cơ bản để làm quen với hệ thống.</p>
-              <div className="mt-6 flex items-baseline">
-                <span data-testid="price-value-free" className="text-4xl font-extrabold text-white">0đ</span>
-              </div>
-              <ul className="mt-8 space-y-4 text-sm text-zinc-300">
-                <li className="flex items-center gap-2"><span className="text-zinc-500">✅</span> Truy cập tất cả Công cụ cơ bản, Kho Ứng Dụng Miễn Phí</li>
-                <li className="flex items-center gap-2"><span className="text-zinc-500">✅</span> Giới hạn: Dùng Thử 1 Tool/1 ngày</li>
-                <li className="flex items-center gap-2"><span className="text-zinc-500">✅</span> Tốc độ xử lý: Tiêu chuẩn (xếp hàng chờ)</li>
-                <li className="flex items-center gap-2 text-zinc-500"><span className="text-red-900/50">❌</span> Không có Voice Clone</li>
-                <li className="flex items-center gap-2 text-zinc-500"><span className="text-red-900/50">❌</span> Không ưu tiên hỗ trợ</li>
-              </ul>
-            </div>
-            <Link href="/hub?plan=free&billing=monthly" data-testid="pricing-select-free" className="mt-8 block w-full rounded-xl bg-zinc-800 py-3 text-center text-sm font-semibold text-white hover:bg-zinc-700 transition">
-              Bắt đầu miễn phí
-            </Link>
-          </div>
+          {tiers.map((tier) => {
+            const isFree = tier.id === 'tier-free';
+            const isPlus = tier.id === 'tier-plus';
+            const isPremium = tier.id === 'tier-premium';
+            
+            const price = isYearly ? tier.priceYearly : tier.priceMonthly;
+            const priceDisplay = tier.priceText ? tier.priceText : formatMoney(price || 0);
 
-          {/* Plus Plan (VIP) */}
-          <div data-testid="pricing-card-vip" className="flex flex-col justify-between rounded-3xl border border-blue-500/30 bg-blue-900/10 p-8 shadow-sm relative hover:border-blue-500/50 transition-colors">
-            <div data-testid="pricing-vip-badge" className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-              Phổ Biến
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-blue-400">Plus (Chuyên Gia)</h3>
-              <p className="mt-4 text-zinc-400 text-sm h-10">Công cụ chuyên sâu dành cho Content Creator.</p>
-              <div className="mt-6 flex items-baseline">
-                <span data-testid="price-value-vip" className="text-4xl font-extrabold text-white">
-                  {isYearly ? '5.99M' : '699K'}
-                </span>
-                <span className="ml-1 text-xl font-semibold text-zinc-500">
-                  {isYearly ? '/năm' : '/tháng'}
-                </span>
-              </div>
-              <ul className="mt-8 space-y-4 text-sm text-zinc-300">
-                <li className="flex items-center gap-2"><span className="text-blue-500">✅</span> Truy cập toàn bộ Công cụ (gồm VIP Tools)</li>
-                <li className="flex items-center gap-2"><span className="text-blue-500">✅</span> Giới hạn: 3 Tool Không Giới Hạn</li>
-                <li className="flex items-center gap-2"><span className="text-blue-500">✅</span> Tốc độ xử lý: Nhanh (Server riêng)</li>
-                <li className="flex items-center gap-2"><span className="text-blue-500">✅</span> Mở khóa Voice Clone cơ bản</li>
-                <li className="flex items-center gap-2"><span className="text-blue-500">✅</span> Hỗ trợ qua Kênh Email / Ticket</li>
-              </ul>
-            </div>
-            <Link href={isYearly ? "/hub?plan=vip&billing=yearly" : "/hub?plan=vip&billing=monthly"} data-testid="pricing-select-vip" className="mt-8 block w-full rounded-xl bg-blue-600/20 border border-blue-500/50 py-3 text-center text-sm font-semibold text-blue-400 hover:bg-blue-600 hover:text-white transition">
-              Đăng ký Gói VIP
-            </Link>
-          </div>
+            let cardClass = "flex flex-col justify-between rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 shadow-sm hover:border-zinc-700 transition-colors";
+            let titleClass = "text-xl font-bold text-zinc-300";
+            let checkColor = "text-zinc-500";
+            let btnClass = "mt-8 block w-full rounded-xl bg-zinc-800 py-3 text-center text-sm font-semibold text-white hover:bg-zinc-700 transition";
+            
+            if (isPlus) {
+              cardClass = "flex flex-col justify-between rounded-3xl border border-blue-500/30 bg-blue-900/10 p-8 shadow-sm relative hover:border-blue-500/50 transition-colors";
+              titleClass = "text-xl font-bold text-blue-400";
+              checkColor = "text-blue-500";
+              btnClass = "mt-8 block w-full rounded-xl bg-blue-600/20 border border-blue-500/50 py-3 text-center text-sm font-semibold text-blue-400 hover:bg-blue-600 hover:text-white transition";
+            } else if (isPremium) {
+              cardClass = "relative flex flex-col justify-between rounded-3xl border-2 border-purple-500 bg-[#1e1e24] p-8 shadow-[0_0_40px_rgba(168,85,247,0.2)]";
+              titleClass = "text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400";
+              checkColor = "text-purple-500";
+              btnClass = "mt-8 block w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 py-3 text-center text-sm font-bold text-white hover:opacity-90 transition shadow-lg shadow-purple-500/25";
+            }
 
-          {/* Premium Plan (Ultimate) */}
-          <div data-testid="pricing-card-ultimate" className="relative flex flex-col justify-between rounded-3xl border-2 border-purple-500 bg-[#1e1e24] p-8 shadow-[0_0_40px_rgba(168,85,247,0.2)]">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-              Khuyên Dùng
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Premium (Vượt Trội)</h3>
-              <p className="mt-4 text-zinc-300 text-sm h-10">Giải pháp toàn diện cho Studio & Doanh nghiệp.</p>
-              <div className="mt-6 flex items-baseline">
-                <span data-testid="price-value-ultimate" className="text-4xl font-extrabold text-white">
-                  {isYearly ? '15.99M' : '1.99M'}
-                </span>
-                <span className="ml-1 text-xl font-semibold text-zinc-500">
-                  {isYearly ? '/năm' : '/tháng'}
-                </span>
+            return (
+              <div key={tier.id} data-testid={`pricing-card-${tier.id}`} className={cardClass}>
+                {tier.badgeText && (
+                  <div className={`absolute -top-4 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wider text-white shadow-lg ${isPremium ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
+                    {tier.badgeText}
+                  </div>
+                )}
+                <div>
+                  <h3 className={titleClass}>{tier.name}</h3>
+                  <p className="mt-4 text-zinc-400 text-sm h-10">{tier.description}</p>
+                  <div className="mt-6 flex items-baseline">
+                    <span className="text-4xl font-extrabold text-white">{priceDisplay}</span>
+                    {!isFree && (
+                      <span className="ml-1 text-xl font-semibold text-zinc-500">
+                        {isYearly ? '/năm' : '/tháng'}
+                      </span>
+                    )}
+                  </div>
+                  <ul className="mt-8 space-y-4 text-sm text-zinc-300">
+                    {tier.features?.map((feat: any, idx: number) => (
+                      <li key={idx} className={`flex items-center gap-2 ${feat.type === 'cross' ? 'text-zinc-500' : ''}`}>
+                        <span className={feat.type === 'cross' ? 'text-red-900/50' : checkColor}>
+                          {feat.type === 'cross' ? '❌' : '✅'}
+                        </span>
+                        {feat.text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <Link 
+                  href={isFree ? `/hub?plan=free&billing=monthly` : `/hub?plan=${tier.id.replace('tier-', '')}&billing=${isYearly ? 'yearly' : 'monthly'}`} 
+                  className={btnClass}
+                >
+                  {isFree ? 'Bắt đầu miễn phí' : (isPremium ? 'Nâng cấp Ultimate' : 'Đăng ký Gói')}
+                </Link>
               </div>
-              <ul className="mt-8 space-y-4 text-sm text-zinc-300">
-                <li className="flex items-center gap-2"><span className="text-purple-500">✅</span> KHÔNG GIỚI HẠN số Tool</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500">✅</span> Tốc độ xử lý: Super VIP (Render siêu tốc)</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500">✅</span> Voice Clone Cao cấp (Cảm xúc, đa ngôn ngữ)</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500">✅</span> Hỗ trợ 1:1 trực tiếp qua Zalo/Telegram</li>
-                <li className="flex items-center gap-2"><span className="text-purple-500">✅</span> Yêu cầu thêm tính năng (Request Feature)</li>
-              </ul>
-            </div>
-            <Link href={isYearly ? "/hub?plan=ultimate&billing=yearly" : "/hub?plan=ultimate&billing=monthly"} data-testid="pricing-select-ultimate" className="mt-8 block w-full rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 py-3 text-center text-sm font-bold text-white hover:opacity-90 transition shadow-lg shadow-purple-500/25">
-              Nâng cấp Ultimate
-            </Link>
-          </div>
+            );
+          })}
         </div>
       ) : (
         <>
@@ -164,77 +199,65 @@ export default function Pricing() {
           </div>
 
           <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Healing Bird */}
-            <div className="flex flex-col justify-between rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 shadow-sm">
-              <div>
-                <h3 className="text-lg font-bold text-zinc-200">Healing Bird Tool</h3>
-                <div className="mt-4 flex items-baseline">
-                  <span className="text-3xl font-extrabold text-emerald-400">
-                    {retailBilling === 'monthly' ? '299K' : '1.99M'}
-                  </span>
-                  <span className="ml-1 text-sm font-medium text-zinc-500">
-                    {retailBilling === 'monthly' ? '/tháng' : '/vĩnh viễn'}
-                  </span>
-                </div>
-                <ul className="mt-6 space-y-3 text-sm text-zinc-400">
-                  <li>• Tự động tách nền chim</li>
-                  <li>• Làm nét lông cánh chim</li>
-                  <li>• Xử lý ảnh hàng loạt</li>
-                </ul>
-              </div>
-              <button className="mt-6 w-full rounded-xl bg-zinc-800/50 border border-zinc-700 py-2.5 text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-700 transition">
-                {retailBilling === 'monthly' ? 'Thuê ngay' : 'Mua đứt'}
-              </button>
-            </div>
+            {/* Render Products */}
+            {products.map((product) => {
+              const price = retailBilling === 'monthly' ? product.priceMonthly : product.priceLifetime;
+              const priceDisplay = formatMoney(price || 0);
 
-            {/* Ban Content */}
-            <div className="flex flex-col justify-between rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 shadow-sm">
-              <div>
-                <h3 className="text-lg font-bold text-zinc-200">Ban Content Tool</h3>
-                <div className="mt-4 flex items-baseline">
-                  <span className="text-3xl font-extrabold text-emerald-400">
-                    {retailBilling === 'monthly' ? '399K' : '2.49M'}
-                  </span>
-                  <span className="ml-1 text-sm font-medium text-zinc-500">
-                    {retailBilling === 'monthly' ? '/tháng' : '/vĩnh viễn'}
-                  </span>
+              return (
+                <div key={product.id} className="flex flex-col justify-between rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 shadow-sm">
+                  <div>
+                    <h3 className="text-lg font-bold text-zinc-200">{product.name || product.id}</h3>
+                    <div className="mt-4 flex items-baseline">
+                      <span className="text-3xl font-extrabold text-emerald-400">{priceDisplay}</span>
+                      <span className="ml-1 text-sm font-medium text-zinc-500">
+                        {retailBilling === 'monthly' ? '/tháng' : '/vĩnh viễn'}
+                      </span>
+                    </div>
+                    <ul className="mt-6 space-y-3 text-sm text-zinc-400">
+                      <li>• Tool chuyên dụng lẻ</li>
+                      {product.desc && <li>• {product.desc}</li>}
+                    </ul>
+                  </div>
+                  <button className="mt-6 w-full rounded-xl bg-zinc-800/50 border border-zinc-700 py-2.5 text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-700 transition">
+                    {retailBilling === 'monthly' ? 'Thuê ngay' : 'Mua đứt'}
+                  </button>
                 </div>
-                <ul className="mt-6 space-y-3 text-sm text-zinc-400">
-                  <li>• Lách bản quyền Video siêu tốc</li>
-                  <li>• Lật/Đổi màu/Chỉnh giọng AI</li>
-                  <li>• Render cực nhanh</li>
-                </ul>
-              </div>
-              <button className="mt-6 w-full rounded-xl bg-zinc-800/50 border border-zinc-700 py-2.5 text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-700 transition">
-                {retailBilling === 'monthly' ? 'Thuê ngay' : 'Mua đứt'}
-              </button>
-            </div>
+              );
+            })}
 
-            {/* Combo */}
-            <div className="relative flex flex-col justify-between rounded-3xl border border-teal-500/50 bg-teal-900/10 p-8 shadow-[0_0_30px_rgba(20,184,166,0.15)]">
-              <div className="absolute -top-3 right-6 rounded-md bg-teal-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
-                Tiết kiệm 20%
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-teal-400">Combo Powerpack</h3>
-                <div className="mt-4 flex items-baseline">
-                  <span className="text-4xl font-extrabold text-white">
-                    {retailBilling === 'monthly' ? '599K' : '3.99M'}
-                  </span>
-                  <span className="ml-1 text-sm font-medium text-zinc-400">
-                    {retailBilling === 'monthly' ? '/tháng' : '/vĩnh viễn'}
-                  </span>
+            {/* Render Combos */}
+            {combos.map((combo) => {
+              const price = retailBilling === 'monthly' ? combo.priceMonthly : combo.priceLifetime;
+              const priceDisplay = formatMoney(price || 0);
+
+              return (
+                <div key={combo.id} className="relative flex flex-col justify-between rounded-3xl border border-teal-500/50 bg-teal-900/10 p-8 shadow-[0_0_30px_rgba(20,184,166,0.15)]">
+                  {combo.badgeText && (
+                    <div className="absolute -top-3 right-6 rounded-md bg-teal-500 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white">
+                      {combo.badgeText}
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-xl font-bold text-teal-400">{combo.name}</h3>
+                    <div className="mt-4 flex items-baseline">
+                      <span className="text-4xl font-extrabold text-white">{priceDisplay}</span>
+                      <span className="ml-1 text-sm font-medium text-zinc-400">
+                        {retailBilling === 'monthly' ? '/tháng' : '/vĩnh viễn'}
+                      </span>
+                    </div>
+                    <ul className="mt-6 space-y-3 text-sm text-zinc-300 font-medium">
+                      {combo.features?.map((feat: any, idx: number) => (
+                        <li key={idx}>🔥 {feat.text}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <button className="mt-6 w-full rounded-xl bg-teal-600 py-2.5 text-sm font-bold text-white hover:bg-teal-500 transition shadow-lg shadow-teal-500/20">
+                    Sở hữu trọn bộ
+                  </button>
                 </div>
-                <ul className="mt-6 space-y-3 text-sm text-zinc-300 font-medium">
-                  <li>🔥 Bao gồm <span className="text-white">Healing Bird Tool</span></li>
-                  <li>🔥 Bao gồm <span className="text-white">Ban Content Tool</span></li>
-                  <li>🔥 Cập nhật tính năng miễn phí</li>
-                </ul>
-              </div>
-              <button className="mt-6 w-full rounded-xl bg-teal-600 py-2.5 text-sm font-bold text-white hover:bg-teal-500 transition shadow-lg shadow-teal-500/20">
-                Sở hữu trọn bộ
-              </button>
-            </div>
+              );
+            })}
           </div>
         </>
       )}

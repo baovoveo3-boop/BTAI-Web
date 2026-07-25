@@ -104,19 +104,13 @@ export async function POST(req: Request) {
                 let newTier = '';
 
                 for (const rawId of toolIds) {
-                  if (rawId === 'combo-khoi-nghiep') {
-                    toolsToActivateSet.add('ban-content');
-                    toolsToActivateSet.add('tool-seeding-pro');
-                    if (newTier !== 'ultimate') newTier = 'plus';
-                  } else if (rawId === 'combo-scale-up') {
+                  if (rawId === 'combo-powerpack') {
                     toolsToActivateSet.add('ban-content');
                     toolsToActivateSet.add('healing-bird');
-                    newTier = 'ultimate';
-                  } else if (rawId === 'combo-all-in-one') {
-                    toolsToActivateSet.add('ban-content');
-                    toolsToActivateSet.add('healing-bird');
-                    toolsToActivateSet.add('tool-seeding-pro');
-                    newTier = 'ultimate';
+                  } else if (rawId === 'tier-plus') {
+                    if (newTier !== 'premium') newTier = 'plus';
+                  } else if (rawId === 'tier-premium') {
+                    newTier = 'premium';
                   } else {
                     toolsToActivateSet.add(rawId);
                   }

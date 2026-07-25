@@ -109,13 +109,13 @@ export async function POST(req: Request) {
         }, { merge: true });
       }
 
-      // Cập nhật Tier nếu mua Combo Plus (Khởi Nghiệp) hoặc Ultimate
-      if (item.id === 'combo-khoi-nghiep') {
-        if (newTier !== 'ultimate') newTier = 'plus';
+      // Cập nhật Tier nếu mua Gói
+      if (item.id === 'tier-plus') {
+        if (newTier !== 'premium') newTier = 'plus';
         newTierExpiresAt = expiresAt;
         isTierUpdated = true;
-      } else if (item.id === 'combo-scale-up' || item.id === 'combo-all-in-one') {
-        newTier = 'ultimate';
+      } else if (item.id === 'tier-premium') {
+        newTier = 'premium';
         newTierExpiresAt = expiresAt;
         isTierUpdated = true;
       }
