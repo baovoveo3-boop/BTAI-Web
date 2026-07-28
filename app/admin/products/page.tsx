@@ -10,6 +10,7 @@ import imageCompression from 'browser-image-compression';
 import { useAuth } from "@/context/AuthContext";
 import { logAdminAction } from "@/lib/adminLogger";
 import { TOOLS } from '@/data/tools';
+import CombosTab from "@/components/admin/CombosTab";
 
 interface Product {
   id: string;
@@ -94,6 +95,7 @@ const SUGGESTIONS = [
 
 export default function AdminProducts() {
   const { userData } = useAuth();
+  const [activeTab, setActiveTab] = useState<'products' | 'combos'>('products');
   const [products, setProducts] = useState<Product[]>([]);
   
   // Confirm Modal State
@@ -927,8 +929,24 @@ export default function AdminProducts() {
     });
   };
 
+  if (activeTab === 'combos') {
+    return (
+      <div className="space-y-6">
+        <div className="flex gap-4 border-b border-zinc-800 pb-2 mb-6">
+          <button onClick={() => setActiveTab('products')} className="text-zinc-400 hover:text-white px-4 py-2 font-bold text-lg transition">📦 Sản phẩm lẻ</button>
+          <button className="text-teal-400 border-b-2 border-teal-500 px-4 py-2 font-bold text-lg">💎 Quản lý Combos</button>
+        </div>
+        <CombosTab />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <div className="flex gap-4 border-b border-zinc-800 pb-2">
+        <button className="text-neonPurple border-b-2 border-neonPurple px-4 py-2 font-bold text-lg">📦 Sản phẩm lẻ</button>
+        <button onClick={() => setActiveTab('combos')} className="text-zinc-400 hover:text-white px-4 py-2 font-bold text-lg transition">💎 Quản lý Combos</button>
+      </div>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">

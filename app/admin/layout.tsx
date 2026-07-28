@@ -62,7 +62,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   📊 Thống kê Tổng quan
                 </Link>
                 <Link href="/admin/products" className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-zinc-900 transition">
-                  📦 Quản lý Sản phẩm
+                  📦 Quản lý Sản phẩm & Combo
+                </Link>
+                <Link href="/admin/tiers" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-emerald-400 rounded-lg hover:bg-zinc-900 transition">
+                  💎 Gói Thành Viên (Tiers)
                 </Link>
                 <Link href="/admin/orders" className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-zinc-900 transition">
                   💳 Giao dịch & Đơn hàng
@@ -92,6 +95,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             <Link href="/admin/products" className="px-3 py-1.5 text-xs font-semibold whitespace-nowrap bg-zinc-900 rounded-lg hover:bg-zinc-800">
               📦 Sản phẩm
+            </Link>
+            <Link href="/admin/tiers" className="px-3 py-1.5 text-xs font-semibold whitespace-nowrap bg-zinc-900 text-emerald-400 rounded-lg hover:bg-zinc-800">
+              💎 Gói Tiers
             </Link>
             <Link href="/admin/orders" className="px-3 py-1.5 text-xs font-semibold whitespace-nowrap bg-zinc-900 rounded-lg hover:bg-zinc-800">
               💳 Giao dịch
