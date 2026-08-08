@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PayOS } from '@payos/node';
-import { db } from '@/lib/firebase';
-import { collection, doc, setDoc } from 'firebase/firestore';
+import { adminFirestore } from '@/lib/firebase-admin';
 
 export async function POST(req: Request) {
   try {
@@ -30,8 +29,8 @@ export async function POST(req: Request) {
 
     // Save transaction info to Firebase BEFORE calling PayOS
     // This allows us to track pending transactions and fulfill them via Webhook
-    const txRef = doc(collection(db, 'transactions'), String(orderCode));
-    await setDoc(txRef, {
+    const txRef = adminFirestore.collection('transactions').doc(String(orderCode));
+    await txRef.set({
       orderCode: orderCode,
       userId: userId,
       userEmail: userEmail || '',
