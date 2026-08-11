@@ -748,7 +748,7 @@ export default function AdminUsers() {
 
       {/* CONFIRMATION MODAL */}
       {confirmModal.isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
           <div className="bg-zinc-900 border-2 border-red-500/50 rounded-2xl w-full max-w-md p-6 space-y-6 shadow-2xl shadow-red-500/10">
             <div className="flex items-center gap-3 text-red-500">
               <ShieldAlert className="h-8 w-8" />
