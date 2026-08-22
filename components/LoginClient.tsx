@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,6 +25,7 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
   const isDesktopAuth = searchParams.get('desktop_auth') === 'true';
   const desktopPort = searchParams.get('port');
+  const forceReauth = searchParams.get('force_reauth') === 'true';
   
   const ssoAttemptedRef = useRef(false);
 
@@ -58,8 +59,17 @@ export default function LoginClient() {
   }, [isDesktopAuth, desktopPort]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser && isDesktopAuth && isValidPort(desktopPort) && !ssoAttemptedRef.current) {
+
+        // Nếu App Hub gửi force_reauth=true → user vừa logout thủ công
+        // Phải signOut để xóa cookie, hiện form đăng nhập sạch, không auto-login
+        if (forceReauth) {
+          await signOut(auth);
+          return;
+        }
+
+        // Trường hợp bình thường (khởi động lần đầu) → Auto-login như cũ
         setLoading(true);
         handleSSORedirect(currentUser).finally(() => {
           setLoading(false);
@@ -67,7 +77,7 @@ export default function LoginClient() {
       }
     });
     return () => unsubscribe();
-  }, [isDesktopAuth, desktopPort, handleSSORedirect]);
+  }, [isDesktopAuth, desktopPort, handleSSORedirect, forceReauth]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
