@@ -376,7 +376,8 @@ export default function AdminProducts() {
           exec_file: data.exec_file || "",
           version: data.version || "",
           download_url: data.download_url || "",
-          force_update: !!data.force_update
+          force_update: !!data.force_update,
+          allow_trial: !!data.allow_trial
         });
       });
       setProducts(list);
