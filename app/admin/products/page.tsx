@@ -636,7 +636,8 @@ export default function AdminProducts() {
             
             const finalGalleryUrls = newGalleryUrls;
 
-            const convertedDownloadUrl = category === "tool" ? convertGoogleDriveUrl(downloadUrl) : "";
+            const isTool = category.toLowerCase() === "tool";
+            const convertedDownloadUrl = isTool ? convertGoogleDriveUrl(downloadUrl) : "";
             
             const sanitizedFeatures = features.map(f => ({
               bold: f.bold || "",
@@ -645,7 +646,7 @@ export default function AdminProducts() {
             const sanitizedHowToUse = howToUse.map(step => step.value || "");
 
             const productData = {
-              category: category.toLowerCase() === "miễn phí" ? "free" : category,
+              category: category.toLowerCase() === "miễn phí" ? "free" : category.toLowerCase(),
               type,
               name,
               description,
@@ -658,13 +659,13 @@ export default function AdminProducts() {
               features: sanitizedFeatures,
               howToUse: sanitizedHowToUse,
               faqs,
-              exec_file: category === "tool" ? execFile : "",
-              version: category === "tool" ? version : "",
+              exec_file: isTool ? execFile : "",
+              version: isTool ? version : "",
               download_url: convertedDownloadUrl,
-              force_update: category === "tool" ? forceUpdate : false,
-              allow_trial: category === "tool" ? allowTrial : false,
-              resourceType: (category === "free" || category.toLowerCase() === "miễn phí") ? resourceType : "",
-              resourceUrl: (category === "free" || category.toLowerCase() === "miễn phí") ? resourceUrl : "",
+              force_update: isTool ? forceUpdate : false,
+              allow_trial: isTool ? allowTrial : false,
+              resourceType: (!isTool && (category === "free" || category.toLowerCase() === "miễn phí")) ? resourceType : "",
+              resourceUrl: (!isTool && (category === "free" || category.toLowerCase() === "miễn phí")) ? resourceUrl : "",
             };
 
             // Sanitize data to remove any undefined fields recursively (Firestore hates undefined)
@@ -1157,7 +1158,7 @@ export default function AdminProducts() {
                   />
                 </div>
 
-                {category === "tool" && (
+                {category.toLowerCase() === "tool" && (
                   <div className="pt-4 border-t border-zinc-800 space-y-4">
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider text-neonPurple">
                       Cấu hình Desktop App
